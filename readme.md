@@ -40,4 +40,20 @@
 
 ## 踩坑
 
-爬蟲被擋
+
+### 爬蟲
+
+爬蟲有些網站會備檔出現403，但因為是403代表網址是有效的。
+
+第二是爬蟲使用get方式且帶參數時會出現如下錯誤訊息
+
+https://www.youtube.com/watch?v=rweQmBxc2lc&list=RDu0CqY27IFyo&index=4
+
+Could not open file '=RDu0CqY27IFyo': File not found'index' is not recognized as an internal or external command,
+operable program or batch file.
+
+從**=RDu0CqY27IFyo**推測應該是帶參數的問題
+
+## 進步方向
+
+可以把router分開成獨立的go檔，且可以再根據不同API或是規模細分成多個go檔案來減輕單一go檔職責過重的問題。

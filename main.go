@@ -21,14 +21,20 @@ var ctx = context.Background()
 func checkurl(url string) bool {
 	c := colly.NewCollector()
 	var getStatusCode int
+	fmt.Println("url:", url)
+
 	c.OnResponse(func(r *colly.Response) {
+		fmt.Println("ok")
 		getStatusCode = r.StatusCode
 	})
 	c.OnError(func(r *colly.Response, err error) {
+		fmt.Println("error")
+		fmt.Println(err.Error())
 		getStatusCode = r.StatusCode
 	})
 	c.Visit(url)
-	if getStatusCode == 200 {
+	fmt.Println("getStatusCode:", getStatusCode)
+	if getStatusCode == 200 || getStatusCode == 403 {
 		return true
 	} else {
 		return false
@@ -47,15 +53,13 @@ func Api(c *gin.Context) {
 		fmt.Printf("data %v\n", data)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "請輸入正確資料",
-			"msg":   err.Error(),
 		})
 		return
 	}
 
 	var dataurl string = data["url"]
 	var expireAt string = data["expireAt"]
-	fmt.Println(dataurl)
-	fmt.Println(expireAt)
+
 	if !checkurl(dataurl) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "錯誤網址",
@@ -65,14 +69,15 @@ func Api(c *gin.Context) {
 
 	timenow := time.Now().UTC().In(newTaipeiZone)
 	convert_expireAt, err := time.Parse(timeLayout, expireAt)
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "無法分析日期",
 		})
 		return
 	}
-	timeresult := convert_expireAt.Sub(timenow)
 
+	timeresult := convert_expireAt.Sub(timenow)
 	continuedtime_secounds := int64(timeresult.Seconds())
 
 	client.Do(ctx, client.B().Incr().Key("id").Build())
