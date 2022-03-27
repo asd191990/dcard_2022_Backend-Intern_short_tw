@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"context"
 
@@ -34,14 +35,12 @@ func checkurl(url string) bool {
 	}
 }
 
-type Url struct {
-	Url      string `form:"url" json:"url"`
-	ExpireAt string `form:"expireAt" json:"expireAt"`
-}
+const timeLayout = time.RFC3339
+
+var newTaipeiZone, _ = time.LoadLocation("Asia/Taipei")
 
 func Api(c *gin.Context) {
 
-	fmt.Printf("wew\n")
 	data := map[string]string{}
 	err := c.Bind(&data)
 	if err != nil {
@@ -52,7 +51,6 @@ func Api(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Printf("%v\n", data)
 
 	var dataurl string = data["url"]
 	var expireAt string = data["expireAt"]
@@ -65,15 +63,29 @@ func Api(c *gin.Context) {
 		return
 	}
 
-	//key
+	timenow := time.Now().UTC().In(newTaipeiZone)
+	convert_expireAt, err := time.Parse(timeLayout, expireAt)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "無法分析日期",
+		})
+		return
+	}
+	timeresult := convert_expireAt.Sub(timenow)
+
+	continuedtime_secounds := int64(timeresult.Seconds())
+
 	client.Do(ctx, client.B().Incr().Key("id").Build())
 	getid, _ := client.Do(ctx, client.B().Get().Key("id").Build()).ToString()
 	client.Do(ctx, client.B().Set().Key(getid).Value(dataurl).Nx().Build()).Error()
-	client.Do(ctx, client.B().Expire().Key(getid).Seconds(600).Build())
+	client.Do(ctx, client.B().Expire().Key(getid).Seconds(continuedtime_secounds).Build())
+	urlresult := "http://localhost:/" + getid
+
 	c.JSON(http.StatusBadRequest, gin.H{
 		"id":       getid,
-		"shortUrl": dataurl,
+		"shortUrl": urlresult,
 	})
+
 }
 
 func Redirectapi(c *gin.Context) {
@@ -86,9 +98,10 @@ func Redirectapi(c *gin.Context) {
 	}
 
 	geturl, err := client.Do(ctx, client.B().Get().Key(c.Param("urlid")).Build()).ToString()
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"result": "找不到網址",
+			"result": "資源已過期",
 		})
 		return
 	} else {
@@ -96,22 +109,15 @@ func Redirectapi(c *gin.Context) {
 	}
 }
 
-func CreateData() {
-	client.Do(ctx, client.B().Set().Key("id").Value("0").Nx().Build()).Error()
-	client.Do(ctx, client.B().Incr().Key("id").Build())
-}
-
 func main() {
+	defer client.Close()
+	if redisopenerr != nil {
+		fmt.Println("redis 連接失敗")
+		return
+	}
+	client.Do(ctx, client.B().Set().Key("id").Value("0").Nx().Build()).Error()
 	router := gin.Default()
 	router.POST("/api/v1/urls", Api)
 	router.GET("/:urlid", Redirectapi)
-	defer client.Close()
-
-	client.Do(ctx, client.B().Set().Key("id").Value("0").Nx().Build()).Error()
-
-	if redisopenerr == nil {
-		// fmt.Println("can open")
-	}
-
-	router.Run(":8000")
+	router.Run("")
 }
