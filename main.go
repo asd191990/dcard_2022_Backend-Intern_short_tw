@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
 	"context"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gocolly/colly"
 	"github.com/rueian/rueidis"
 )
 
@@ -22,23 +23,35 @@ const TIMELAYOUT = time.RFC3339
 
 var NewTaipeiZone, _ = time.LoadLocation("Asia/Taipei")
 
-func Checkurl(url string) bool {
-	c := colly.NewCollector()
-	var getStatusCode int
-	fmt.Println("url:", url)
+var URLRegex = `^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)`
+var re = regexp.MustCompile(URLRegex)
 
-	c.OnResponse(func(r *colly.Response) {
-		fmt.Println("ok")
-		getStatusCode = r.StatusCode
-	})
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("error")
+func CheckUrlRegular(url string) bool {
+	fmt.Println("regex", url)
+	fmt.Println(re.MatchString(url))
+	return re.MatchString(url)
+}
+
+func CheckUrl(urlstring string) bool {
+
+	if neturl, err := url.Parse(urlstring); err != nil || neturl.Host == "" {
+		fmt.Println("網址為非法字串")
+		return false
+	}
+
+	if !CheckUrlRegular(urlstring) {
+		fmt.Println("網址為非法字串,regular error")
+		return false
+	}
+
+	response, err := http.Get(urlstring)
+	if err != nil {
 		fmt.Println(err.Error())
-		getStatusCode = r.StatusCode
-	})
-	c.Visit(url)
-	fmt.Println("getStatusCode:", getStatusCode)
-	if getStatusCode == 200 || getStatusCode == 403 {
+		return false
+	}
+	fmt.Println(urlstring)
+	fmt.Println(response.StatusCode)
+	if response.StatusCode == 200 || response.StatusCode == 403 {
 		return true
 	} else {
 		return false
@@ -78,9 +91,9 @@ func UrlCreateApi(c *gin.Context) {
 		return
 	}
 
-	if !Checkurl(dataurl) {
+	if !CheckUrl(dataurl) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "錯誤網址",
+			"error": "輸入的網址為錯誤網址",
 		})
 		return
 	}

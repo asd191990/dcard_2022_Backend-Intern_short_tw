@@ -8,18 +8,33 @@ import (
 	"github.com/gavv/httpexpect/v2"
 )
 
-func TestCheckurl(t *testing.T) {
-	url := "https://www.dcard.tw/f/talk/p/238474170"
-	if Checkurl(url) {
-		t.Log("success")
-	} else {
-		t.Error("fail")
+var urls = map[string]bool{
+	"https://google.com":                             true,
+	"https://ithelp.ithome.com.tw/articles/10212120": true,
+	"wewcokl<ewqwee/":                                false,
+	"asasas2324237wew.cwee":                          false,
+}
+
+func TestCheckUrlRegular(t *testing.T) {
+
+	for UrlKey, _ := range urls {
+		if CheckUrlRegular(UrlKey) {
+			t.Log("success")
+		} else {
+			t.Error("fail")
+		}
 	}
-	url = "https://www.dcard.tw"
-	if Checkurl(url) {
-		t.Log("success")
-	} else {
-		t.Error("fail")
+
+}
+
+func TestCheckurl(t *testing.T) {
+
+	for UrlKey, ValueResult := range urls {
+		if CheckUrl(UrlKey) == ValueResult {
+			t.Log("success")
+		} else {
+			t.Error("fail")
+		}
 	}
 }
 
@@ -33,7 +48,6 @@ func TestAddUrlData(t *testing.T) {
 	} else {
 		t.Error("fail")
 	}
-
 }
 
 func TestUrlCreateApi(t *testing.T) {
