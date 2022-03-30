@@ -8,6 +8,14 @@
 由於先前都只是論壇上了解過redis，而沒有實作經驗，甚至不太懂redis本身也算是一個資料庫，在v1中，原本的理解是先透過 if看redis有沒有get到，如果有就return ，沒有就存進SQlite，然後在set redis一次，當然在做到一半的時候就打斷了這個做法。
 
 
+docker run \
+-d \
+--name redis \
+-p 6379:6379 \
+-v /data:/data \
+-v /conf/redis.conf:/etc/redis/redis.conf \
+redis /etc/redis/redis.conf 
+
 ## 主要工具
 
 後端 -> gin
