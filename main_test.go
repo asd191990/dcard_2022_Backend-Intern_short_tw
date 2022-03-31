@@ -41,7 +41,7 @@ func TestCheckurl(t *testing.T) {
 func TestAddUrlData(t *testing.T) {
 	url := "https://www.dcard.tw/f/talk/p/238474170"
 	var continuedtime_secounds int64 = 600
-	if getid, urlresult := AddUrlData(url, continuedtime_secounds); getid != "" && urlresult != "" {
+	if getid, urlresult := CreateUrlData(url, continuedtime_secounds); getid != "" && urlresult != "" {
 		t.Log("success: ")
 		t.Log("getid" + getid)
 		t.Log("urlresult: " + urlresult)

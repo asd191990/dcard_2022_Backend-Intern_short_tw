@@ -23,12 +23,11 @@ const TIMELAYOUT = time.RFC3339
 
 var NewTaipeiZone, _ = time.LoadLocation("Asia/Taipei")
 
-var URLRegex = `^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)`
-var re = regexp.MustCompile(URLRegex)
+const URLREGEX = `^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)`
+
+var re = regexp.MustCompile(URLREGEX)
 
 func CheckUrlRegular(url string) bool {
-	fmt.Println("regex", url)
-	fmt.Println(re.MatchString(url))
 	return re.MatchString(url)
 }
 
@@ -58,7 +57,7 @@ func CheckUrl(urlstring string) bool {
 	}
 }
 
-func AddUrlData(url string, continuedtime_secounds int64) (string, string) {
+func CreateUrlData(url string, continuedtime_secounds int64) (string, string) {
 	Client.Do(Ctx, Client.B().Incr().Key("id").Build())
 	getid, _ := Client.Do(Ctx, Client.B().Get().Key("id").Build()).ToString()
 	Client.Do(Ctx, Client.B().Set().Key(getid).Value(url).Nx().Build())
@@ -99,7 +98,7 @@ func UrlCreateApi(c *gin.Context) {
 	}
 
 	timenow := time.Now().UTC().In(NewTaipeiZone)
-	convert_expireAt, err := time.Parse(TIMELAYOUT, expireAt)
+	convertExpireAt, err := time.Parse(TIMELAYOUT, expireAt)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -108,14 +107,14 @@ func UrlCreateApi(c *gin.Context) {
 		return
 	}
 
-	timeresult := convert_expireAt.Sub(timenow)
-	continuedtime_secounds := int64(timeresult.Seconds())
+	timeResult := convertExpireAt.Sub(timenow)
+	continuedtimeSecounds := int64(timeResult.Seconds())
 
-	if continuedtime_secounds < 0 {
-		continuedtime_secounds = 600
+	if continuedtimeSecounds < 0 {
+		continuedtimeSecounds = 0
 	}
 
-	id, urlresult := AddUrlData(dataurl, continuedtime_secounds)
+	id, urlresult := CreateUrlData(dataurl, continuedtimeSecounds)
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":       id,
@@ -133,7 +132,7 @@ func RedirectApi(c *gin.Context) {
 		return
 	}
 
-	geturl, err := Client.Do(Ctx, Client.B().Get().Key(c.Param("urlid")).Build()).ToString()
+	getUrl, err := Client.Do(Ctx, Client.B().Get().Key(c.Param("urlid")).Build()).ToString()
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -141,7 +140,7 @@ func RedirectApi(c *gin.Context) {
 		})
 		return
 	} else {
-		c.Redirect(http.StatusMovedPermanently, geturl)
+		c.Redirect(http.StatusMovedPermanently, getUrl)
 	}
 }
 
